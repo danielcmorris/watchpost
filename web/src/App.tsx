@@ -6,6 +6,7 @@ import Contacts from './pages/Contacts';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import MonitorDetail from './pages/MonitorDetail';
+import Profile from './pages/Profile';
 import PublicStatus from './pages/PublicStatus';
 import StatusPages from './pages/StatusPages';
 
@@ -37,6 +38,7 @@ function Admin({ children }: { children: React.ReactNode }) {
           <NavLink to="/" end>Monitors</NavLink>
           <NavLink to="/contacts">Contacts</NavLink>
           <NavLink to="/status-pages">Status pages</NavLink>
+          <NavLink to="/profile">Profile</NavLink>
         </nav>
         <div className="foot">
           {active.length > 0 && <span className="muted">{up} of {active.length} up</span>}
@@ -57,6 +59,7 @@ export default function App() {
       <Route path="/monitors/:id" element={<Admin><MonitorDetail /></Admin>} />
       <Route path="/contacts" element={<Admin><Contacts /></Admin>} />
       <Route path="/status-pages" element={<Admin><StatusPages /></Admin>} />
+      <Route path="/profile" element={<Admin><Profile /></Admin>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

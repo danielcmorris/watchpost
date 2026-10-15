@@ -62,7 +62,7 @@ so keep it reachable only through the proxy (firewall the published port).
 - **Ping monitors** need the `NET_RAW` capability (already set in `docker-compose.yml`).
 - **Checks run from wherever the container runs.** A monitor for something only visible from another network will fail.
 - **Retention:** raw check results are kept 90 days; daily rollups are kept indefinitely.
-- **Admin password:** the admin is only seeded when the `users` table is empty. To reset it, delete the user row
+- **Admin password:** change it under **Profile** once signed in (10+ characters; other sessions are signed out). `ADMIN_PASSWORD` is only used to create the account on first start. If you lose the password, delete the user row
   (`DELETE FROM users;`) and restart with a new `ADMIN_PASSWORD`.
 - **Status pages** expose only monitor names, status, uptime and incident times — never targets or settings.
 - Sign-in is rate limited, sessions are stored hashed, and only one admin account is supported.

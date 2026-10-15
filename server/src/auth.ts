@@ -35,6 +35,11 @@ export async function requireAuth(req: FastifyRequest, reply: FastifyReply): Pro
   await reply.code(401).send({ error: 'Unauthorized' });
 }
 
+export const MIN_PASSWORD = 10;
+const passwordBody = z.object({
+  current_password: z.string().min(1).max(200),
+  new_password: z.string().min(MIN_PASSWORD).max(200),
+});
 const loginBody = z.object({ username: z.string().min(1).max(100), password: z.string().min(1).max(200) });
 
 export function authRoutes(app: FastifyInstance): void {
@@ -59,6 +64,22 @@ export function authRoutes(app: FastifyInstance): void {
     const sid = req.cookies[COOKIE];
     if (sid) await pool.query('DELETE FROM sessions WHERE id=$1', [hashId(sid)]);
     reply.clearCookie(COOKIE, { path: '/' });
+    return { ok: true };
+  });
+
+  app.post('/api/auth/password', { preHandler: requireAuth, config: { rateLimit: { max: 10, timeWindow: '15 minutes' } } }, async (req, reply) => {
+    const body = passwordBody.safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: `New password must be ${MIN_PASSWORD}–200 characters.` });
+    const { current_password, new_password } = body.data;
+    if (new_password === current_password) return reply.code(400).send({ error: 'New password must be different from the current one.' });
+    const user = (req as FastifyRequest & { user?: { id: number } }).user!;
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id=$1', [user.id]);
+    if (!rows[0] || !(await argon2.verify(rows[0].password_hash, current_password))) {
+      return reply.code(400).send({ error: 'Current password is incorrect.' });
+    }
+    await pool.query('UPDATE users SET password_hash=$2 WHERE id=$1', [user.id, await argon2.hash(new_password)]);
+    // Sign out every other session; keep the one making this request.
+    await pool.query('DELETE FROM sessions WHERE user_id=$1 AND id <> $2', [user.id, hashId(req.cookies[COOKIE] ?? '')]);
     return { ok: true };
   });
 
