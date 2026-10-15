@@ -35,6 +35,19 @@ const monitorBody = z.object({
 
 const idParam = z.object({ id: z.coerce.number().int() });
 
+const historyBody = z.object({
+  incidents: z.array(z.object({
+    started_at: z.string().datetime(),
+    resolved_at: z.string().datetime().nullable(),
+    cause: z.string().max(500),
+  })).max(5000).default([]),
+  daily: z.array(z.object({
+    day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    total: z.number().int().min(1),
+    ok: z.number().int().min(0),
+  }).refine((d) => d.ok <= d.total)).max(4000).default([]),
+});
+
 async function setContacts(monitorId: number, ids: number[]): Promise<void> {
   await pool.query('DELETE FROM monitor_contacts WHERE monitor_id=$1', [monitorId]);
   if (ids.length) {
@@ -119,5 +132,29 @@ export function monitorRoutes(app: FastifyInstance): void {
       [p.data.id],
     );
     return { monitor: m.rows[0], checks: checks.rows, incidents: incidents.rows, daily: daily.rows };
+  });
+
+  /** Import past history (e.g. from another monitoring service). Only data from before this
+   *  monitor was created here is accepted, so it never overwrites or duplicates live results. */
+  app.post('/api/monitors/:id/history', async (req, reply) => {
+    const p = idParam.safeParse(req.params);
+    const b = historyBody.safeParse(req.body);
+    if (!p.success || !b.success) return reply.code(400).send({ error: 'Invalid request' });
+    const { id } = p.data;
+    const inc = await pool.query(
+      `INSERT INTO incidents (monitor_id, started_at, resolved_at, cause)
+       SELECT $1, s, r, c FROM unnest($2::timestamptz[], $3::timestamptz[], $4::text[]) AS t(s, r, c)
+       WHERE s < (SELECT created_at FROM monitors WHERE id = $1)
+         AND NOT EXISTS (SELECT 1 FROM incidents i WHERE i.monitor_id = $1 AND i.started_at = s)`,
+      [id, b.data.incidents.map((i) => i.started_at), b.data.incidents.map((i) => i.resolved_at), b.data.incidents.map((i) => i.cause)],
+    );
+    const daily = await pool.query(
+      `INSERT INTO check_daily (monitor_id, day, total, ok)
+       SELECT $1, d, t, o FROM unnest($2::date[], $3::int[], $4::int[]) AS x(d, t, o)
+       WHERE d < (SELECT created_at::date FROM monitors WHERE id = $1)
+       ON CONFLICT (monitor_id, day) DO NOTHING`,
+      [id, b.data.daily.map((d) => d.day), b.data.daily.map((d) => d.total), b.data.daily.map((d) => d.ok)],
+    );
+    return { incidents_added: inc.rowCount ?? 0, days_added: daily.rowCount ?? 0 };
   });
 }

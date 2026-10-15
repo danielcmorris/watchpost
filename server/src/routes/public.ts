@@ -19,8 +19,8 @@ export function publicRoutes(app: FastifyInstance): void {
     const monitors = await pool.query(
       `SELECT m.id, m.name, m.status,
         (SELECT round(100.0 * count(*) FILTER (WHERE ok) / NULLIF(count(*),0), 2)::float FROM checks c WHERE c.monitor_id=m.id AND c.ts > now() - interval '24 hours') AS uptime_24h,
-        (SELECT round(100.0 * count(*) FILTER (WHERE ok) / NULLIF(count(*),0), 2)::float FROM checks c WHERE c.monitor_id=m.id AND c.ts > now() - interval '7 days') AS uptime_7d,
-        (SELECT round(100.0 * count(*) FILTER (WHERE ok) / NULLIF(count(*),0), 2)::float FROM checks c WHERE c.monitor_id=m.id AND c.ts > now() - interval '30 days') AS uptime_30d
+        (SELECT round(100.0 * sum(ok) / NULLIF(sum(total),0), 2)::float FROM check_daily d WHERE d.monitor_id=m.id AND d.day > current_date - 7) AS uptime_7d,
+        (SELECT round(100.0 * sum(ok) / NULLIF(sum(total),0), 2)::float FROM check_daily d WHERE d.monitor_id=m.id AND d.day > current_date - 30) AS uptime_30d
        FROM status_page_monitors s JOIN monitors m ON m.id = s.monitor_id
        WHERE s.page_id=$1 ORDER BY s.position`,
       [pid],
