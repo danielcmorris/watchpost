@@ -1,0 +1,10 @@
+{
+  "name": "watchpost",
+  "private": true,
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "dev:server": "npm -w server run dev",
+    "build": "npm -w web run build && npm -w server run build",
+    "test": "npm -w server test"
+  }
+}

@@ -1,0 +1,38 @@
+# Quick start:   cp .env.example .env   (edit it)   then
+#   docker compose --profile with-db up -d --build    # app + bundled Postgres
+#   docker compose up -d --build                      # app only (external Postgres)
+services:
+  watchpost:
+    build: .
+    image: watchpost:latest
+    container_name: watchpost
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "4250"
+    ports:
+      - "${HOST_PORT:-4250}:4250"
+    cap_add:
+      - NET_RAW # required for ICMP ping monitors
+    depends_on:
+      db:
+        condition: service_healthy
+        required: false # only when using the bundled db (--profile with-db)
+
+  db:
+    image: postgres:16-alpine
+    profiles: ["with-db"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-watchpost}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-} # required when using --profile with-db
+      POSTGRES_DB: ${POSTGRES_DB:-watchpost}
+    volumes:
+      - watchpost-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  watchpost-db:

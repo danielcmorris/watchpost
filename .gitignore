@@ -1,0 +1,9 @@
+node_modules
+dist
+# Secrets and local config — never commit
+.env
+*.env
+!.env.example
+creds/
+*.key
+*.pem

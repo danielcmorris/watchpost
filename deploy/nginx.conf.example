@@ -1,0 +1,27 @@
+# Reverse proxy with HTTPS. Replace the <PLACEHOLDERS>, save as e.g.
+# /etc/nginx/conf.d/uptime.conf, then: nginx -t && systemctl reload nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name <YOUR_DOMAIN>;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name <YOUR_DOMAIN>;
+
+    ssl_certificate     <PATH_TO>/fullchain.pem;
+    ssl_certificate_key <PATH_TO>/privkey.pem;
+
+    location / {
+        proxy_pass         http://<DOCKER_HOST_IP>:4250;   # HOST_PORT from .env
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 60s;
+    }
+}
