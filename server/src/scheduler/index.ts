@@ -2,6 +2,7 @@ import { runCheck, type MonitorSpec } from '../checkers/index.js';
 import { checkSsl } from '../checkers/ssl.js';
 import { config } from '../config.js';
 import { pool } from '../db/pool.js';
+import { alertEmail } from '../emails.js';
 import { sendAlert } from '../mailer.js';
 import { nextState, type Status } from './state.js';
 
@@ -50,16 +51,18 @@ export async function processMonitor(m: MonitorRow): Promise<void> {
     [m.id, s.status, s.consecutiveFailures],
   );
 
+  const mon = { id: m.id, name: m.name, type: m.type, target: m.target, port: m.config.port };
   if (s.transition === 'down') {
     await pool.query('INSERT INTO incidents (monitor_id, cause) VALUES ($1,$2)', [m.id, result.error ?? 'Check failed']);
-    await sendAlert(m.id, `🔴 DOWN: ${m.name}`, `${m.name} (${m.target}) is DOWN.\nCause: ${result.error ?? 'Check failed'}\nTime: ${new Date().toISOString()}`);
+    await sendAlert(m.id, alertEmail({ baseUrl: config.publicUrl, kind: 'down', monitor: mon, reason: result.error ?? 'Check failed', startedAt: new Date() }));
   } else if (s.transition === 'up') {
     const { rows } = await pool.query(
       'UPDATE incidents SET resolved_at=now() WHERE monitor_id=$1 AND resolved_at IS NULL RETURNING started_at',
       [m.id],
     );
-    const since = rows[0]?.started_at ? ` Downtime started ${new Date(rows[0].started_at).toISOString()}.` : '';
-    await sendAlert(m.id, `🟢 UP: ${m.name}`, `${m.name} (${m.target}) is back UP.${since}`);
+    await sendAlert(m.id, alertEmail({
+      baseUrl: config.publicUrl, kind: 'up', monitor: mon, startedAt: rows[0]?.started_at ? new Date(rows[0].started_at) : undefined, resolvedAt: new Date(),
+    }));
   }
 
   // Daily certificate-expiry piggyback for HTTPS web monitors.
@@ -68,7 +71,7 @@ export async function processMonitor(m: MonitorRow): Promise<void> {
     if (Date.now() - last > DAY) {
       sslChecked.set(m.id, Date.now());
       const ssl = await checkSsl({ type: 'ssl', target: m.target, timeoutS: m.timeout_s, config: { sslWarnDays: m.config.sslWarnDays } });
-      if (!ssl.ok) await sendAlert(m.id, `⚠️ SSL: ${m.name}`, `${m.name} (${m.target}) certificate problem: ${ssl.error}`);
+      if (!ssl.ok) await sendAlert(m.id, alertEmail({ baseUrl: config.publicUrl, kind: 'ssl', monitor: mon, reason: ssl.error }));
     }
   }
 }

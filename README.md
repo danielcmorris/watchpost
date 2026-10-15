@@ -43,10 +43,12 @@ CREATE DATABASE watchpost OWNER watchpost;
 | `DATABASE_URL` | yes | Postgres connection string |
 | `SESSION_SECRET` | yes | Random string (`openssl rand -hex 32`) |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | first start | Admin account, created only if no users exist |
-| `PUBLIC_URL` | no | URL users reach the app at. `https://…` enables Secure cookies |
+| `PUBLIC_URL` | no | Public address of your install. Used for every link in alert emails; `https://…` also enables Secure cookies |
 | `HOST_PORT` | no | Docker host port (default `4250`) |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` `SMTP_FROM` | no | Email alerts. Port 465 uses implicit TLS. Without these, alerts are only logged |
 | `POSTGRES_USER` `POSTGRES_PASSWORD` `POSTGRES_DB` | with bundled DB | Credentials for the `db` service |
+
+Alert emails are HTML with a plain-text fallback and link back to `PUBLIC_URL` (the monitor page and dashboard). Query strings in monitor URLs are hidden in emails, since they often contain tokens.
 
 Alerts go to the contacts attached to a monitor, or to **all** contacts if a monitor has none selected.
 Add contacts under **Contacts**.

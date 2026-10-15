@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from './config.js';
 import { pool } from './db/pool.js';
+import type { AlertMessage } from './emails.js';
 
 const transport = config.smtp.host && config.smtp.user && config.smtp.from
   ? nodemailer.createTransport({
@@ -23,7 +24,8 @@ export async function recipientsFor(monitorId: number): Promise<string[]> {
   return all.rows.map((r) => r.email);
 }
 
-export async function sendAlert(monitorId: number, subject: string, text: string): Promise<void> {
+export async function sendAlert(monitorId: number, msg: AlertMessage): Promise<void> {
+  const { subject, text, html } = msg;
   const to = await recipientsFor(monitorId);
   if (!to.length) return;
   if (!transport) {
@@ -31,7 +33,7 @@ export async function sendAlert(monitorId: number, subject: string, text: string
     return;
   }
   try {
-    const info = await transport.sendMail({ from: `Watchpost <${config.smtp.from}>`, to, subject, text });
+    const info = await transport.sendMail({ from: `Watchpost <${config.smtp.from}>`, to, subject, text, html });
     console.log(`[mail] "${subject}" accepted=${info.accepted.join(',')} rejected=${info.rejected.join(',')} response=${info.response}`);
   } catch (e) {
     console.error('[mail] send failed', e);
