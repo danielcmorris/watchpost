@@ -8,6 +8,7 @@ const transport = config.smtp.host && config.smtp.user && config.smtp.from
       host: config.smtp.host,
       port: config.smtp.port,
       secure: config.smtp.port === 465,
+      requireTLS: config.smtp.port !== 465, // never fall back to plaintext on STARTTLS ports (587)
       name: new URL(config.publicUrl).hostname, // EHLO name; default is the container ID
       auth: { user: config.smtp.user, pass: config.smtp.pass },
     })
