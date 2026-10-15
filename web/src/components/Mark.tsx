@@ -43,3 +43,9 @@ export function Ticks({ values, count = 40 }: { values: boolean[]; count?: numbe
     </div>
   );
 }
+
+/** Status as a labelled pill: a shape, a word and a colour. */
+export function Pill({ state }: { state: State }) {
+  const word = state === 'up' ? 'Up' : state === 'down' ? 'Down' : state === 'paused' ? 'Paused' : 'Pending';
+  return <span className={`pill ${state}`}><Status state={state} size={10} />{word}</span>;
+}

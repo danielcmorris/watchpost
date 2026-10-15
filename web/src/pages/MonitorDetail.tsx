@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, type Monitor } from '../api';
-import { Status, stateOf } from '../components/Mark';
+import { Pill, Status, stateOf } from '../components/Mark';
 import { UptimeBars } from './PublicStatus';
 
 interface Detail {
@@ -36,13 +36,13 @@ export default function MonitorDetail() {
   return (
     <>
       <p style={{ margin: '0 0 18px' }}><Link to="/">All monitors</Link></p>
-      <div className="headline"><Status state={state} size={18} /><h1>{m.name}</h1></div>
+      <div className="headline"><h1>{m.name}</h1><Pill state={state} /></div>
       <p className="muted" style={{ margin: '6px 0 0', wordBreak: 'break-all' }}>{m.target}{m.config.port ? `:${m.config.port}` : ''}</p>
 
       <div className="facts">
         <div><b>{uptime == null ? '–' : `${uptime.toFixed(2)}%`}</b><span>uptime, last 24 hours</span></div>
         <div><b>{avg == null ? '–' : `${avg} ms`}</b><span>average response</span></div>
-        <div><b>{last ? new Date(last.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '–'}</b><span>last check{last && !last.ok && last.error ? `, failed: ${last.error}` : ''}</span></div>
+        <div><b>{last ? new Date(last.ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '–'}</b><span>last check{last && !last.ok && last.error ? ` (failed)` : ''}</span></div>
       </div>
 
       <section className="card">
@@ -52,9 +52,9 @@ export default function MonitorDetail() {
             <ResponsiveContainer>
               <LineChart data={pts}>
                 <CartesianGrid stroke="var(--rule)" vertical={false} />
-                <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} scale="time" stroke="var(--muted)" tickLine={false}
+                <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} scale="time" stroke="var(--muted)" tickLine={false} minTickGap={48}
                   tickFormatter={(v) => new Date(v).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} />
-                <YAxis unit=" ms" stroke="var(--muted)" width={64} tickLine={false} axisLine={false} />
+                <YAxis unit=" ms" stroke="var(--muted)" width={58} tickLine={false} axisLine={false} />
                 <Tooltip labelFormatter={(v) => new Date(v as number).toLocaleString()} formatter={(v) => [`${v} ms`, 'Response']}
                   contentStyle={{ background: 'var(--panel)', border: '1px solid var(--rule)', borderRadius: 6, color: 'var(--ink)' }} />
                 <Line dataKey="ms" stroke="var(--accent)" dot={false} strokeWidth={2} isAnimationActive={false} />

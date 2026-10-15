@@ -2,8 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import '@fontsource/young-serif';
-import '@fontsource-variable/hanken-grotesk';
+import '@fontsource-variable/geist';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

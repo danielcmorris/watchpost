@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api';
-import { Mark, Status, type State } from '../components/Mark';
+import { Mark, Pill, Status, type State } from '../components/Mark';
 
 interface Daily { day: string; total: number; ok: number }
 interface PubMonitor {
@@ -65,9 +65,9 @@ export default function PublicStatus() {
         {p.monitors.map((m) => (
           <section className="site" key={m.id}>
             <div className="row">
-              <Status state={m.status as State} />
               <strong className="grow">{m.name}</strong>
               <span className="muted">{pct(m.uptime_30d)} over 30 days</span>
+              <Pill state={m.status as State} />
             </div>
             <UptimeBars daily={m.daily} />
             <p className="muted" style={{ margin: '8px 0 0' }}>{pct(m.uptime_24h)} in the last 24 hours, {pct(m.uptime_7d)} in the last 7 days</p>
