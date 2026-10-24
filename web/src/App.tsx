@@ -3,6 +3,7 @@ import { Link, NavLink, Navigate, Route, Routes, useNavigate } from 'react-route
 import { api, type Monitor } from './api';
 import { Mark } from './components/Mark';
 import Contacts from './pages/Contacts';
+import AlertMonitor from './pages/AlertMonitor';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import MonitorDetail from './pages/MonitorDetail';
@@ -55,6 +56,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/status/:slug" element={<PublicStatus />} />
+      <Route path="/alert/monitors/:id" element={<AlertMonitor />} />
       <Route path="/" element={<Admin><Dashboard /></Admin>} />
       <Route path="/monitors/:id" element={<Admin><MonitorDetail /></Admin>} />
       <Route path="/contacts" element={<Admin><Contacts /></Admin>} />

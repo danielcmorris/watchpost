@@ -9,8 +9,8 @@ export type AlertInput = {
   startedAt?: Date;
   /** When it recovered (up) */
   resolvedAt?: Date;
-  /** Base URL used for every link in the email (the PUBLIC_URL setting). */
-  baseUrl: string;
+  /** Signed, time-limited URL for the read-only monitor view. */
+  signedMonitorUrl: string;
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -46,8 +46,7 @@ export function formatDuration(ms: number): string {
 }
 
 export function alertEmail(i: AlertInput): AlertMessage {
-  const base = i.baseUrl.replace(/\/+$/, '');
-  const monitorUrl = `${base}/monitors/${i.monitor.id}`;
+  const monitorUrl = i.signedMonitorUrl;
   const m = i.monitor;
   const target = displayTarget(m.type, m.target, m.port);
 
@@ -86,7 +85,7 @@ export function alertEmail(i: AlertInput): AlertMessage {
 
   const text = [
     headline, '', ...rows.map(([k, v]) => `${k.padEnd(10)} ${v}`), '',
-    `View monitor: ${monitorUrl}`, `Dashboard:    ${base}/`, '',
+    `View monitor (link expires in 7 days): ${monitorUrl}`, '',
     '--', 'Watchpost. You get this email because you are an alert contact for this monitor.',
   ].join('\n');
 
@@ -110,7 +109,7 @@ export function alertEmail(i: AlertInput): AlertMessage {
   <tr><td align="center" style="padding:28px 14px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
       <tr><td style="padding:0 4px 14px;font-size:16px;font-weight:700;letter-spacing:-0.01em;color:#0f2127;">
-        <a href="${esc(base)}/" style="color:#0f2127;text-decoration:none;">Watchpost</a>
+        <span style="color:#0f2127;">Watchpost</span>
       </td></tr>
       <tr><td style="background:#ffffff;border:1px solid #dbe3e0;border-radius:14px;overflow:hidden;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -124,14 +123,14 @@ export function alertEmail(i: AlertInput): AlertMessage {
             </table>
           </td></tr>
           <tr><td style="padding:18px 28px 28px;">
-            <a href="${esc(monitorUrl)}" style="display:inline-block;padding:11px 22px;border-radius:9px;background:#14707e;color:#ffffff;font-size:14.5px;font-weight:600;text-decoration:none;">View monitor</a>
-            <a href="${esc(base)}/" style="display:inline-block;padding:11px 14px;color:#14707e;font-size:14.5px;font-weight:600;text-decoration:none;">Open dashboard</a>
+            <a href="${esc(monitorUrl)}" style="display:inline-block;padding:11px 22px;border-radius:9px;background:#14707e;color:#ffffff;font-size:14.5px;font-weight:600;text-decoration:none;">View monitor without signing in</a>
+            <p style="margin:12px 0 0;color:#566c72;font-size:12.5px;">This read-only link expires in 7 days. Anyone with the email can use it until then.</p>
           </td></tr>
         </table>
       </td></tr>
       <tr><td style="padding:16px 6px 0;font-size:12.5px;line-height:1.6;color:#566c72;">
         You&rsquo;re receiving this because you are an alert contact for this monitor.
-        Manage contacts and alerts in <a href="${esc(base)}/contacts" style="color:#566c72;">Watchpost</a>.
+        Manage contacts and alerts in Watchpost after signing in.
       </td></tr>
     </table>
   </td></tr>

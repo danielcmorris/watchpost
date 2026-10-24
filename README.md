@@ -48,7 +48,9 @@ CREATE DATABASE watchpost OWNER watchpost;
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` `SMTP_FROM` | no | Email alerts. Port 465 uses implicit TLS. Without these, alerts are only logged |
 | `POSTGRES_USER` `POSTGRES_PASSWORD` `POSTGRES_DB` | with bundled DB | Credentials for the `db` service |
 
-Alert emails are HTML with a plain-text fallback and link back to `PUBLIC_URL` (the monitor page and dashboard). Query strings in monitor URLs are hidden in emails, since they often contain tokens.
+Alert emails are HTML with a plain-text fallback and link back to `PUBLIC_URL`. Query strings in monitor targets are hidden in emails, since they often contain tokens.
+
+Alert emails include a signed link to a read-only view of the affected monitor. The link works without signing in for seven days and can be used by anyone who has the email. It cannot open the admin dashboard or change settings. Rotating `SESSION_SECRET` invalidates outstanding alert links. Keep `PUBLIC_URL` set to the public HTTPS address so the links open correctly.
 
 Alerts go to the contacts attached to a monitor, or to **all** contacts if a monitor has none selected.
 Add contacts under **Contacts**.

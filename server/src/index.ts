@@ -13,6 +13,7 @@ import { startScheduler, stopScheduler } from './scheduler/index.js';
 import { adminRoutes } from './routes/admin.js';
 import { monitorRoutes } from './routes/monitors.js';
 import { publicRoutes } from './routes/public.js';
+import { alertRoutes } from './routes/alerts.js';
 
 const app = Fastify({ logger: true, trustProxy: true });
 await app.register(cookie);
@@ -22,6 +23,7 @@ authRoutes(app);
 await app.register(async (scoped) => monitorRoutes(scoped)); // auth hook is encapsulated here
 adminRoutes(app);
 publicRoutes(app);
+alertRoutes(app);
 app.get('/healthz', async () => ({ ok: true }));
 
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
@@ -29,6 +31,7 @@ if (existsSync(webDir)) {
   await app.register(fstatic, { root: webDir });
   app.setNotFoundHandler((req, reply) => {
     if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'Not found' });
+    if (req.url.startsWith('/alert/')) reply.header('Cache-Control', 'no-store').header('Referrer-Policy', 'no-referrer');
     return reply.sendFile('index.html');
   });
 }

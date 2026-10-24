@@ -3,6 +3,7 @@ import { checkSsl } from '../checkers/ssl.js';
 import { config } from '../config.js';
 import { pool } from '../db/pool.js';
 import { alertEmail } from '../emails.js';
+import { signedMonitorUrl } from '../alert-links.js';
 import { sendAlert } from '../mailer.js';
 import { nextState, type Status } from './state.js';
 
@@ -52,16 +53,17 @@ export async function processMonitor(m: MonitorRow): Promise<void> {
   );
 
   const mon = { id: m.id, name: m.name, type: m.type, target: m.target, port: m.config.port };
+  const link = () => signedMonitorUrl(config.publicUrl, m.id, config.sessionSecret);
   if (s.transition === 'down') {
     await pool.query('INSERT INTO incidents (monitor_id, cause) VALUES ($1,$2)', [m.id, result.error ?? 'Check failed']);
-    await sendAlert(m.id, alertEmail({ baseUrl: config.publicUrl, kind: 'down', monitor: mon, reason: result.error ?? 'Check failed', startedAt: new Date() }));
+    await sendAlert(m.id, alertEmail({ signedMonitorUrl: link(), kind: 'down', monitor: mon, reason: result.error ?? 'Check failed', startedAt: new Date() }));
   } else if (s.transition === 'up') {
     const { rows } = await pool.query(
       'UPDATE incidents SET resolved_at=now() WHERE monitor_id=$1 AND resolved_at IS NULL RETURNING started_at',
       [m.id],
     );
     await sendAlert(m.id, alertEmail({
-      baseUrl: config.publicUrl, kind: 'up', monitor: mon, startedAt: rows[0]?.started_at ? new Date(rows[0].started_at) : undefined, resolvedAt: new Date(),
+      signedMonitorUrl: link(), kind: 'up', monitor: mon, startedAt: rows[0]?.started_at ? new Date(rows[0].started_at) : undefined, resolvedAt: new Date(),
     }));
   }
 
@@ -71,7 +73,7 @@ export async function processMonitor(m: MonitorRow): Promise<void> {
     if (Date.now() - last > DAY) {
       sslChecked.set(m.id, Date.now());
       const ssl = await checkSsl({ type: 'ssl', target: m.target, timeoutS: m.timeout_s, config: { sslWarnDays: m.config.sslWarnDays } });
-      if (!ssl.ok) await sendAlert(m.id, alertEmail({ baseUrl: config.publicUrl, kind: 'ssl', monitor: mon, reason: ssl.error }));
+      if (!ssl.ok) await sendAlert(m.id, alertEmail({ signedMonitorUrl: link(), kind: 'ssl', monitor: mon, reason: ssl.error }));
     }
   }
 }
